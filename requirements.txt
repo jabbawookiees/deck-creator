@@ -1,0 +1,1 @@
+-e git+git@github.com:jabbawookiees/python-ass.git@567fb0b9c925016783de4dff0ae70db99883abf0#egg=ass-parse-tags
