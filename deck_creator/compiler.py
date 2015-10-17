@@ -7,7 +7,7 @@ from datetime import timedelta
 import deck_creator.parser
 
 
-def compile(first_filepath, second_filepath, audio_filepath, intersect_threshold=300):
+def compile(first_filepath, second_filepath, audio_filepath, output_name='audio', intersect_threshold=300):
     first_segments = deck_creator.parser.parse(first_filepath)
     second_segments = deck_creator.parser.parse(second_filepath)
     intersect_threshold = timedelta(milliseconds=int(intersect_threshold))
@@ -15,11 +15,14 @@ def compile(first_filepath, second_filepath, audio_filepath, intersect_threshold
 
     try:
         os.mkdir('output')
-        os.mkdir(os.path.join('output', 'audio'))
+    except OSError:
+        pass
+    try:
+        os.mkdir(os.path.join('output', output_name))
     except OSError:
         pass
 
-    csv_filepath = os.path.join('output', 'deck.csv')
+    csv_filepath = os.path.join('output', '%s.csv' % output_name)
     with open(csv_filepath, 'wb') as csvfile:
         writer = csv.writer(csvfile)
         total_length = len(graph.components)
@@ -27,11 +30,15 @@ def compile(first_filepath, second_filepath, audio_filepath, intersect_threshold
             print 'Working on %d of %d' % (index + 1, total_length)
             if len(component) <= 1:
                 continue
-            output_path = os.path.join('output', 'audio', '%05d.mp3' % index)
+            output_path = os.path.abspath(os.path.join('output', output_name, '%05d.mp3' % index))
             line_one = ' '.join(segment.text for segment in component.first)
             line_two = ' '.join(segment.text for segment in component.second)
             ffmpeg_crop(audio_filepath, component.compute_start(), component.compute_end(), output_path)
-            writer.writerow([line_one, line_two, output_path])
+            writer.writerow([line_one, line_two, ankify_audio_path(output_path)])
+
+
+def ankify_audio_path(filepath):
+    return '[sound:{path}]'.format(path=filepath)
 
 
 def ffmpeg_crop(audio_filepath, start, end, output_path):
@@ -152,4 +159,4 @@ class Component(object):
 if __name__ == '__main__':
     import sys
     print sys.argv
-    compile(sys.argv[1], sys.argv[2], sys.argv[3])
+    compile(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])

@@ -8,15 +8,27 @@ def parse(filename):
         with open(filename, 'r') as f:
             doc = ass.parse(f)
             for event in doc.events:
-                if not isinstance(event, ass.document.Dialogue):
-                    continue
-                if event.text.strip() == '':
+                if ignore_ass_event(event):
                     continue
                 seg = Segment(event.start, event.end, event.tags_stripped())
                 segments.append(seg)
     else:
         raise Exception('Invalid file format')
     return segments
+
+
+def ignore_ass_event(event):
+    banned_tags = ['pos']
+    if not isinstance(event, ass.document.Dialogue):
+        return True
+    if event.tags_stripped().strip() == '':
+        return True
+    for part in event.parse_parts():
+        if isinstance(part, ass.document.Tag) and part.name in banned_tags:
+            return True
+        elif isinstance(part, ass.document.Tag) and '\pos(' in part.name:
+            return True
+    return False
 
 
 class Segment(object):
